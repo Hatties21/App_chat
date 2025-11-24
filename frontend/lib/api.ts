@@ -76,8 +76,21 @@ api.interceptors.response.use(
         original.headers.Authorization = `Bearer ${newToken}`;
       return api(original);
     } catch (e) {
+      // Refresh token expired - logout user
       useAuthStore.getState().clearState();
       flush(e, null);
+      
+      // Show notification
+      if (typeof window !== 'undefined') {
+        const { toast } = await import('sonner');
+        toast.error('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại');
+        
+        // Redirect to signin after a short delay
+        setTimeout(() => {
+          window.location.href = '/signin';
+        }, 1500);
+      }
+      
       throw e;
     } finally {
       isRefreshing = false;

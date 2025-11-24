@@ -26,7 +26,7 @@ const conversationSchema = new mongoose.Schema(
       required: true,
     },
     // Với DM: pairKey = min(userA,userB)#max(userA,userB)
-    pairKey: { type: String, index: true },
+    pairKey: { type: String },
     group: groupSchema,
     lastMessagePreview: lastMessagePreviewSchema,
     lastMessageAt: { type: Date },

@@ -1,12 +1,12 @@
 export interface User {
-  _id?: string;
-  id?: string;
+  id: string;
   username: string;
-  email?: string;
+  email: string;
   displayName: string;
   avatarUrl?: string;
   bio?: string;
   phone?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  theme?: 'light' | 'dark' | 'system';
+  createdAt: string;
+  updatedAt: string;
 }

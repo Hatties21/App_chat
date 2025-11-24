@@ -1,16 +1,35 @@
 import express from "express";
-import { createGroupConversation, deleteGroupConversation, directConversation, getMyConversations, updateGroupInfo } from "../controllers/conversationController.js";
+import { 
+  createGroupConversation, 
+  deleteGroupConversation, 
+  directConversation, 
+  getMyConversations, 
+  updateGroupInfo,
+  markAsRead,
+  getUnreadCount
+} from "../controllers/conversationController.js";
 
 const router = express.Router();
 
-router.get("/me", getMyConversations);
+// Get my conversations
+router.get("/", getMyConversations);
 
+// Create direct conversation
 router.post("/direct", directConversation);
 
+// Create group conversation
 router.post("/group", createGroupConversation);
 
-router.patch("/:conversationId/group", updateGroupInfo);
+// Update group info
+router.patch("/:conversationId", updateGroupInfo);
 
-router.delete("/:conversationId/group", deleteGroupConversation);
+// Delete group conversation
+router.delete("/:conversationId", deleteGroupConversation);
+
+// Mark as read
+router.post("/:conversationId/read", markAsRead);
+
+// Get unread count
+router.get("/:conversationId/unread-count", getUnreadCount);
 
 export default router;

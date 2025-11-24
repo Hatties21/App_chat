@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { authService } from "@/services/authService";
 import type { AuthState } from "@/types/store";
 import type { User } from "@/types/user";
+import { disconnectSocket } from "@/lib/socket";
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   accessToken:
@@ -34,6 +35,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
     } catch (err) {
       console.error("Sign-up failed:", err);
+      throw err;
     }
   },
 
@@ -47,6 +49,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
     } catch (err) {
       console.error("Sign-in failed:", err);
+      throw err;
     }
   },
 
@@ -54,6 +57,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signOut: async () => {
     try {
       await authService.signOut();
+      disconnectSocket();
     } catch (err) {
       console.error("Sign-out failed:", err);
     } finally {
@@ -78,6 +82,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         avatarUrl: raw.avatarUrl,
         bio: raw.bio,
         phone: raw.phone,
+        theme: raw.theme,
         createdAt: raw.createdAt,
         updatedAt: raw.updatedAt,
       };
@@ -91,15 +96,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   // ---- Bootstrap ----
   bootstrap: async () => {
     try {
-      if (!get().accessToken) {
-        try {
-          const { accessToken } = await authService.refreshToken();
-          if (accessToken) get().setAccessToken(accessToken);
-        } catch (err) {
-          console.error("Refresh token failed:", err);
-        }
-      }
-      await get().fetchMe();
+      // Timeout after 5 seconds
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Bootstrap timeout')), 5000)
+      );
+
+      await Promise.race([
+        (async () => {
+          if (!get().accessToken) {
+            try {
+              const { accessToken } = await authService.refreshToken();
+              if (accessToken) get().setAccessToken(accessToken);
+            } catch (err) {
+              console.error("Refresh token failed:", err);
+            }
+          }
+          await get().fetchMe();
+        })(),
+        timeoutPromise
+      ]);
+    } catch (err) {
+      console.error("Bootstrap failed:", err);
     } finally {
       set({ loading: false });
     }

@@ -18,6 +18,7 @@ export const getParticipants = async (req, res) => {
 
     const members = await Participant.find({ conversationID: conversationId })
       .select("_id conversationID userID role lastReadAt mute pinned nickname joinedAt leftAt")
+      .populate("userID", "_id username displayName avatarUrl")
       .lean();
 
     return res.status(200).json({ participants: members });

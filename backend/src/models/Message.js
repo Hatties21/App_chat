@@ -10,6 +10,31 @@ const attachmentSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const reactionSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    emoji: { type: String, required: true },
+    createdAt: { type: Date, default: Date.now },
+  },
+  { _id: false }
+);
+
+const readBySchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    readAt: { type: Date, default: Date.now },
+  },
+  { _id: false }
+);
+
 const messageSchema = new mongoose.Schema(
   {
     senderId: {
@@ -30,6 +55,8 @@ const messageSchema = new mongoose.Schema(
     },
     text: { type: String, trim: true },
     attachments: [attachmentSchema],
+    reactions: [reactionSchema],
+    readBy: [readBySchema],
     clientMsgId: { type: String }, // idempotency từ FE
     editedAt: { type: Date },
     deletedAt: { type: Date },

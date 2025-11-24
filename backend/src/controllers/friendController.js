@@ -2,8 +2,10 @@ import mongoose from "mongoose";
 import FriendRequest from "../models/FriendRequest.js";
 import User from "../models/User.js";
 import Friend from "../models/Friend.js";
+import { AppError } from "../middlewares/errorHandler.js";
+import logger from "../utils/logger.js";
 
-export const sendFriendRequest = async (req, res) => {
+export const sendFriendRequest = async (req, res, next) => {
   try {
     const { to, message } = req.body;
     const from = req.user._id;
@@ -62,12 +64,21 @@ export const sendFriendRequest = async (req, res) => {
       status: "pending",
     });
 
-    return res
-      .status(201)
-      .json({ message: "Gửi lời mời kết bạn thành công", request });
+    // Populate user info for frontend
+    await request.populate([
+      { path: "from", select: "_id username displayName avatarUrl" },
+      { path: "to", select: "_id username displayName avatarUrl" }
+    ]);
+
+    logger.info(`Friend request sent from ${from} to ${to}`);
+
+    return res.status(201).json({ 
+      success: true,
+      message: "Gửi lời mời kết bạn thành công", 
+      request 
+    });
   } catch (error) {
-    console.error("Lỗi khi gửi lời mời kết bạn:", error);
-    res.status(500).json({ error: "Lỗi máy chủ" });
+    next(error);
   }
 };
 

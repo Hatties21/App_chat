@@ -2,9 +2,11 @@ import mongoose from "mongoose";
 import Conversation from "../models/Conversation.js";
 import Participant from "../models/Participant.js";
 import Message from "../models/Message.js";
+import { AppError } from "../middlewares/errorHandler.js";
+import logger from "../utils/logger.js";
 
 /** Gửi tin nhắn */
-export const sendMessage = async (req, res) => {
+export const sendMessage = async (req, res, next) => {
   try {
     const senderId = req.user._id;
     const { conversationID, type = "text", text, attachments = [], clientMsgId } = req.body;
@@ -34,6 +36,11 @@ export const sendMessage = async (req, res) => {
       clientMsgId,
     });
 
+    // Populate sender info
+    const populatedMsg = await Message.findById(msg._id)
+      .populate('senderId', '_id username displayName avatarUrl')
+      .lean();
+
     // cập nhật lastMessagePreview + lastMessageAt
     const preview = {
       content: type === "text" ? (msg.text || "") : `[${type}]`,
@@ -45,19 +52,22 @@ export const sendMessage = async (req, res) => {
       { $set: { lastMessagePreview: preview, lastMessageAt: msg.createdAt } }
     );
 
-    return res.status(201).json({ message: msg });
+    logger.info(`Message sent: ${msg._id} in conversation ${conversationID}`);
+    return res.status(201).json({ 
+      success: true,
+      message: populatedMsg 
+    });
   } catch (err) {
-    console.error("Lỗi gửi tin nhắn:", err);
-    return res.status(500).json({ error: "Lỗi hệ thống" });
+    next(err);
   }
 };
 
 /** Lấy tin nhắn theo conversation (phân trang ngược) */
-export const getMessages = async (req, res) => {
+export const getMessages = async (req, res, next) => {
   try {
     const me = req.user._id;
     const { conversationId } = req.params;
-    let { limit = 30, before } = req.query;
+    let { limit = 25, before } = req.query;
 
     if (!mongoose.Types.ObjectId.isValid(conversationId)) {
       return res.status(400).json({ error: "ID hội thoại không hợp lệ" });
@@ -76,21 +86,30 @@ export const getMessages = async (req, res) => {
       }
     }
 
+    const limitNum = Math.min(Number(limit) || 25, 100);
     const rows = await Message.find(query)
+      .populate('senderId', '_id username displayName avatarUrl')
+      .populate('readBy.userId', '_id username displayName avatarUrl')
       .sort({ createdAt: -1 })
-      .limit(Math.min(Number(limit) || 30, 100))
+      .limit(limitNum)
       .lean();
 
+    const hasMore = rows.length === limitNum;
     const nextCursor = rows.length ? rows[rows.length - 1].createdAt : null;
-    return res.status(200).json({ messages: rows, nextCursor });
+    
+    return res.status(200).json({ 
+      success: true,
+      messages: rows, 
+      nextCursor,
+      hasMore
+    });
   } catch (err) {
-    console.error("Lỗi lấy tin nhắn:", err);
-    return res.status(500).json({ error: "Lỗi hệ thống" });
+    next(err);
   }
 };
 
 /** Sửa tin nhắn (chỉ người gửi) */
-export const editMessage = async (req, res) => {
+export const editMessage = async (req, res, next) => {
   try {
     const me = req.user._id;
     const { messageId } = req.params;
@@ -125,15 +144,17 @@ export const editMessage = async (req, res) => {
       );
     }
 
-    return res.status(200).json({ message: msg });
+    return res.status(200).json({ 
+      success: true,
+      message: msg 
+    });
   } catch (err) {
-    console.error("Lỗi sửa tin nhắn:", err);
-    return res.status(500).json({ error: "Lỗi hệ thống" });
+    next(err);
   }
 };
 
 /** Xoá tin nhắn (soft delete hoặc hard delete tuỳ chọn – ở đây hard delete) */
-export const deleteMessage = async (req, res) => {
+export const deleteMessage = async (req, res, next) => {
   try {
     const me = req.user._id;
     const { messageId } = req.params;
@@ -183,9 +204,103 @@ export const deleteMessage = async (req, res) => {
       }
     }
 
+    logger.info(`Message deleted: ${messageId}`);
     return res.sendStatus(204);
   } catch (err) {
-    console.error("Lỗi xoá tin nhắn:", err);
-    return res.status(500).json({ error: "Lỗi hệ thống" });
+    next(err);
+  }
+};
+
+/** Thêm reaction vào tin nhắn */
+export const addReaction = async (req, res, next) => {
+  try {
+    const me = req.user._id;
+    const { messageId } = req.params;
+    const { emoji } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(messageId)) {
+      return res.status(400).json({ error: "ID tin nhắn không hợp lệ" });
+    }
+
+    if (!emoji || typeof emoji !== 'string') {
+      return res.status(400).json({ error: "Emoji không hợp lệ" });
+    }
+
+    const msg = await Message.findById(messageId);
+    if (!msg) return res.status(404).json({ error: "Không tìm thấy tin nhắn" });
+
+    // Kiểm tra user có quyền react (phải là participant)
+    const isParticipant = await Participant.exists({ 
+      conversationID: msg.conversationID, 
+      userID: me 
+    });
+    if (!isParticipant) {
+      return res.status(403).json({ error: "Bạn không thuộc hội thoại này" });
+    }
+
+    // Xóa reaction cũ của user này (nếu có) với cùng emoji
+    msg.reactions = msg.reactions.filter(
+      r => !(r.userId.toString() === me.toString() && r.emoji === emoji)
+    );
+
+    // Thêm reaction mới
+    msg.reactions.push({
+      userId: me,
+      emoji,
+      createdAt: new Date()
+    });
+
+    await msg.save();
+
+    // Populate để trả về
+    const populatedMsg = await Message.findById(msg._id)
+      .populate('senderId', '_id username displayName avatarUrl')
+      .populate('reactions.userId', '_id username displayName avatarUrl')
+      .lean();
+
+    logger.info(`Reaction added to message ${messageId} by user ${me}`);
+    return res.status(200).json({ 
+      success: true,
+      message: populatedMsg 
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/** Xóa reaction khỏi tin nhắn */
+export const removeReaction = async (req, res, next) => {
+  try {
+    const me = req.user._id;
+    const { messageId } = req.params;
+    const { emoji } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(messageId)) {
+      return res.status(400).json({ error: "ID tin nhắn không hợp lệ" });
+    }
+
+    const msg = await Message.findById(messageId);
+    if (!msg) return res.status(404).json({ error: "Không tìm thấy tin nhắn" });
+
+    // Xóa reaction của user
+    msg.reactions = msg.reactions.filter(
+      r => !(r.userId.toString() === me.toString() && r.emoji === emoji)
+    );
+
+    await msg.save();
+
+    // Populate để trả về
+    const populatedMsg = await Message.findById(msg._id)
+      .populate('senderId', '_id username displayName avatarUrl')
+      .populate('reactions.userId', '_id username displayName avatarUrl')
+      .lean();
+
+    logger.info(`Reaction removed from message ${messageId} by user ${me}`);
+    return res.status(200).json({ 
+      success: true,
+      message: populatedMsg 
+    });
+  } catch (err) {
+    next(err);
   }
 };

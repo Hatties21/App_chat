@@ -11,7 +11,10 @@ const userSchema = new mongoose.Schema(
     },
     hashedPassword: {
       type: String,
-      required: true,
+      required: function() {
+        // Password not required for OAuth users
+        return !this.googleId;
+      },
     },
     email: {
       type: String,
@@ -40,7 +43,26 @@ const userSchema = new mongoose.Schema(
       sparse: true, //không nhập cũng được nhưng khi nhập thì không được trùng
       unique: true,
     },
-    // thêm trường nếu muốn
+    isOnline: {
+      type: Boolean,
+      default: false,
+    },
+    lastSeen: {
+      type: Date,
+      default: Date.now,
+    },
+    // OAuth fields
+    googleId: {
+      type: String,
+      sparse: true,
+      unique: true,
+    },
+    // Preferences
+    theme: {
+      type: String,
+      enum: ['light', 'dark', 'system'],
+      default: 'system',
+    },
   },
   { timestamps: true }
 );

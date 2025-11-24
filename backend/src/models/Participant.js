@@ -17,6 +17,10 @@ const participantSchema = new mongoose.Schema(
       enum: ["owner", "admin", "member"],
       default: "member",
     },
+    lastReadMessageId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Message",
+    },
     lastReadAt: { type: Date },
     mute: { type: Boolean, default: false },
     pinned: { type: Boolean, default: false },
