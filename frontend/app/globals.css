@@ -1,6 +1,8 @@
 /* Tailwind CSS v4 */
 @import "tailwindcss";
 
+@custom-variant dark (&:is(.dark *));
+
 @theme {
   /* Light mode colors */
   --color-border: oklch(0.92 0.005 240);
