@@ -1,7 +1,8 @@
-// PostCSS configuration for Tailwind CSS v4
+// PostCSS configuration for Tailwind CSS v3
 const config = {
   plugins: {
-    "@tailwindcss/postcss": {},
+    tailwindcss: {},
+    autoprefixer: {},
   },
 };
 
