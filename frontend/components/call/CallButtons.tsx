@@ -32,7 +32,7 @@ export function CallButtons() {
         username: otherUser.username,
         displayName: otherUser.displayName || otherUser.username,
         avatarUrl: otherUser.avatarUrl,
-        conversationId: currentConversationId, // Add conversationId
+        conversationId: currentConversationId ?? undefined, // Convert null to undefined
       },
       "voice"
     );
@@ -50,7 +50,7 @@ export function CallButtons() {
         username: otherUser.username,
         displayName: otherUser.displayName || otherUser.username,
         avatarUrl: otherUser.avatarUrl,
-        conversationId: currentConversationId, // Add conversationId
+        conversationId: currentConversationId ?? undefined, // Convert null to undefined
       },
       "video"
     );
