@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: false, // Disable to prevent double socket connections
+  experimental: {
+    turbo: undefined, // Disable Turbopack
+  },
   images: {
     remotePatterns: [
       {
