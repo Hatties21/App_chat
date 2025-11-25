@@ -1,0 +1,66 @@
+// Auth api
+POST /auth/signup → signUp
+
+POST /auth/signin → signIn
+
+POST /auth/signout → signOut
+
+POST /auth/refresh-token → refreshToken
+
+
+// User api
+GET /users/me → authMe
+
+
+// Friend api
+POST /friends/requests → sendFriendRequest
+
+POST /friends/requests/:requestId/accept → acceptFriendRequest
+
+POST /friends/requests/:requestId/decline → declineFriendRequest
+
+GET /friends → getAllFriends
+
+GET /friends/requests → getFriendRequests
+
+DELETE /friends/requests/:requestId/cancel → cancelFriendRequest
+
+DELETE /friends/:friendId → deleteGroupConversation
+
+
+// Conversation apis
+POST /conversations/direct → directConversation
+
+POST /conversations/group → createGroupConversation
+
+GET /conversations/me → getMyConversations
+
+PATCH /conversations/:conversationId/group → updateGroupInfo
+
+DELETE /conversations/:conversationId/group → deleteGroupConversation
+
+
+// Message api
+POST /messages → sendMessage
+
+GET /messages/:conversationId → getMessages
+
+PATCH /messages/:messageId → editMessage
+
+DELETE /messages/:messageId → deleteMessage
+
+
+// Participant api
+GET /participants/:conversationId → getParticipants
+
+PATCH /participants/:conversationId/mark-read → markRead
+
+PATCH /participants/:conversationId/me → updateMyParticipantSettings
+
+POST /participants/:conversationId/add → addMembers
+
+DELETE /participants/:conversationId/remove/:userId → removeMember
+
+PATCH /participants/:conversationId/transfer-ownership → transferOwnership
+
+DELETE /participants/:conversationId/leave → leaveGroup
