@@ -1,9 +1,9 @@
 import type { NextConfig } from "next";
 
 /**
- * Next.js 15 Configuration
- * - Using Webpack (not Turbopack) for better Tailwind CSS v3 compatibility
- * - React 18 for stability
+ * Next.js 16 Configuration
+ * - Using Turbopack for faster builds
+ * - React 19 + Tailwind CSS v4
  */
 const nextConfig: NextConfig = {
   reactStrictMode: false, // Disable to prevent double socket connections
