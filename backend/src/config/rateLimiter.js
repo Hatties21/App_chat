@@ -5,7 +5,7 @@ const isDevelopment = process.env.NODE_ENV !== 'production';
 // General API rate limiter
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isDevelopment ? 1000 : 300, // Increased for better UX
+  max: 1000, // High limit for chat app (lots of messages/updates)
   message: 'Quá nhiều request từ IP này, vui lòng thử lại sau',
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
