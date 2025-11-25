@@ -102,5 +102,9 @@ export const userSchemas = {
       .messages({
         'string.uri': 'URL avatar không hợp lệ',
       }),
+    theme: Joi.string().valid('light', 'dark', 'system')
+      .messages({
+        'any.only': 'Theme phải là light, dark hoặc system',
+      }),
   }),
 };
