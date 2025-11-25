@@ -5,7 +5,7 @@ const isDevelopment = process.env.NODE_ENV !== 'production';
 // General API rate limiter
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isDevelopment ? 1000 : 100, // Relaxed for development
+  max: isDevelopment ? 1000 : 300, // Increased for better UX
   message: 'Quá nhiều request từ IP này, vui lòng thử lại sau',
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
@@ -14,7 +14,7 @@ export const apiLimiter = rateLimit({
 // Auth endpoints rate limiter (signin, signup)
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isDevelopment ? 50 : 5, // 50 for dev, 5 for production
+  max: isDevelopment ? 50 : 10, // Increased for better UX
   message: 'Quá nhiều lần đăng nhập, vui lòng thử lại sau 15 phút',
   skipSuccessfulRequests: false, // Count all requests (even successful ones)
   standardHeaders: true,
